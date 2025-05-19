@@ -1,0 +1,5 @@
+/docker/mysql/dbdata/
+/.env
+/log/nginx/access.log
+/log/nginx/error.log
+/vendor/

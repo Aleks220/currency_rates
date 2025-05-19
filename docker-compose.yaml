@@ -1,0 +1,73 @@
+services:
+    # image project
+    nbu-service:
+        build:
+            args:
+                user: www-data
+                uid: 1000
+            context: ${APP_VOLUME_ROOT_MOUNT_POINT}
+            dockerfile: Dockerfile
+        image: currency-rates-app
+        container_name: nbu_service
+        restart: unless-stopped
+        working_dir: ${APP_WORKING_DIR}
+        command: sh -c "composer install && php-fpm"
+        volumes:
+            - ${APP_VOLUME_ROOT_MOUNT_POINT}:${APP_VOLUME_ROOT_DIR}
+        depends_on:
+            - nginx-currencies
+            - mysql-currencies
+            - redis-currencies
+        networks:
+            - nbu-service
+
+    # nginx
+    nginx-currencies:
+        image: nginx
+        container_name: nginx_currencies
+        restart: unless-stopped
+        tty: true
+        ports:
+            - ${NGINX_PORT_EXT}:${NGINX_PORT_INT}
+        environment:
+            - NGINX_HOST=${NGINX_HOST}
+            - NGINX_PORT=${NGINX_PORT_INT}
+        volumes:
+            - ${NGINX_VOLUME_ROOT_MOUNT_POINT}:${NGINX_VOLUME_ROOT_DIR}
+            - ${NGINX_VOLUME_NGINX_CONF_MOUNT_POINT}:${NGINX_VOLUME_NGINX_CONF_PATH}
+        networks:
+            - nbu-service
+
+    # db mysql
+    mysql-currencies:
+        image: mysql:8.0
+        command:  --character-set-server=utf8 --collation-server=utf8_general_ci --ssl=0
+        container_name: mysql_currencies
+        restart: unless-stopped
+        tty: true
+        ports:
+            - ${DB_PORT_EXT}:${DB_PORT}
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+        volumes:
+            - ${DB_VOLUME_DBDATA_MOUNT_POINT}:${DB_VOLUME_DBDATA_DIR}
+        networks:
+            - nbu-service
+
+    # redis
+    redis-currencies:
+        image: redis:latest
+        container_name: redis_currencies
+        restart: unless-stopped
+        command: redis-server --port ${REDIS_PORT}
+        ports:
+            - ${REDIS_PORT_EXT}:${REDIS_PORT}
+        networks:
+            - nbu-service
+
+networks:
+    nbu-service:
+        driver: bridge
