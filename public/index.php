@@ -124,7 +124,7 @@ function respondWithCurrencies(array $currencies, string $date, ?string $valcode
 
     foreach ($currencies as $currency) {
         if (isset($currency['cc']) && strtoupper((string) $currency['cc']) === $valcode) {
-            respond($currency, 200, $source);
+            respond([$currency], 200, $source);
         }
     }
 
